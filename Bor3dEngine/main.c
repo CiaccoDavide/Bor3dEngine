@@ -1,8 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <GL/glew.h>
-#include <GL/freeglut.h>
+#include "Utils.h"
 #define WINDOW_TITLE_PREFIX "Bor3d Engine"
 
 int CurrentWidth = 800;
@@ -11,47 +7,18 @@ int WindowHandle = 0; // used to store the handle to the window created by FreeG
 
 unsigned FrameCount = 0;
 
-//
-typedef struct
-{
-	float XYZW[4];
-	float RGBA[4];
-} Vertex;
+GLuint ProjectionMatrixUniformLocation;
+GLuint ViewMatrixUniformLocation;
+GLuint ModelMatrixUniformLocation;
+GLuint BufferIds[3] = { 0 };
+GLuint ShaderIds[3] = { 0 };
 
-GLuint VertexShaderId;
-GLuint FragmentShaderId;
-GLuint ProgramId;
-GLuint VaoId;
-GLuint VboId;
+Matrix ProjectionMatrix;
+Matrix ViewMatrix;
+Matrix ModelMatrix;
 
-// vertex shader
-const GLchar* VertexShader =
-{
-	"#version 400 /* using GLSL version 4.00 */\n"\
-
-	"layout(location=0) in vec4 in_Position;\n"\
-	"layout(location=1) in vec4 in_Color;\n"\
-	"out vec4 ex_Color;\n"\
-
-	"void main(void)\n"\
-	"{\n"\
-	"  gl_Position = in_Position;\n"\
-	"  ex_Color = in_Color;\n"\
-	"}\n"
-};
-// fragment shader (affects the final color of each pixel)
-const GLchar* FragmentShader =
-{
-	"#version 400 /* using GLSL version 4.00 */\n"\
-
-	"in vec4 ex_Color;\n"\
-	"out vec4 out_Color;\n"\
-
-	"void main(void)\n"\
-	"{\n"\
-	"  out_Color = ex_Color;\n"\
-	"}\n"
-};
+float CubeRotation = 0;
+clock_t LastTime = 0;
 
 void Initialize(int, char*[]);
 void InitWindow(int, char*[]);
@@ -59,12 +26,10 @@ void ResizeFunction(int, int);
 void RenderFunction(void);
 void TimerFunction(int);
 void IdleFunction(void);
-//
-void Cleanup(void);
-void CreateVBO(void);
-void DestroyVBO(void);
-void CreateShaders(void);
-void DestroyShaders(void);
+
+void CreateCube(void);
+void DestroyCube(void);
+void DrawCube(void);
 
 int main(int argc, char* argv[])
 {
@@ -100,10 +65,25 @@ void Initialize(int argc, char* argv[])
 		glGetString(GL_VERSION)
 		);
 
-	CreateShaders();
-	CreateVBO();
+	glGetError();
 
 	glClearColor(0.1f, 0.1f, 0.1f, 0.0f); // background color
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	ExitOnGLError("ERROR: Could not set OpenGL depth testing options");
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+	ExitOnGLError("ERROR: Could not set OpenGL culling options");
+
+	ModelMatrix = IDENTITY_MATRIX;
+	ProjectionMatrix = IDENTITY_MATRIX;
+	ViewMatrix = IDENTITY_MATRIX;
+	TranslateMatrix(&ViewMatrix, 0, 0, -2);
+
+	CreateCube();
 }
 
 void InitWindow(int argc, char* argv[])
@@ -142,7 +122,7 @@ void InitWindow(int argc, char* argv[])
 	glutIdleFunc(IdleFunction);
 	glutTimerFunc(0, TimerFunction, 0); // remember that v-sync depends on the gpu driver settings!
 
-	glutCloseFunc(Cleanup);
+	glutCloseFunc(DestroyCube);
 }
 
 void ResizeFunction(int Width, int Height)
@@ -150,6 +130,18 @@ void ResizeFunction(int Width, int Height)
 	CurrentWidth = Width;
 	CurrentHeight = Height;
 	glViewport(0, 0, CurrentWidth, CurrentHeight); // viewport(x, y, width, height)
+
+	ProjectionMatrix =
+		CreateProjectionMatrix(
+			60,
+			(float)CurrentWidth / CurrentHeight,
+			1.0f,
+			100.0f
+		);
+
+	glUseProgram(ShaderIds[0]);
+	glUniformMatrix4fv(ProjectionMatrixUniformLocation, 1, GL_FALSE, ProjectionMatrix.m);
+	glUseProgram(0);
 }
 
 void RenderFunction(void)
@@ -159,7 +151,7 @@ void RenderFunction(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // reset some buffers: back-buffer (to glClearColor) and z-buffer
 
 	// here we can draw on the back-buffer
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
+	DrawCube();
 
 	glutSwapBuffers(); // swaps the back-buffer with the front-buffer, rendering the drawn scene to our window!
 }
@@ -193,133 +185,118 @@ void TimerFunction(int Value)
 }
 
 
-void Cleanup(void)
-{
-	DestroyShaders();
-	DestroyVBO();
-}
 
-void CreateVBO(void)
-{	
+void CreateCube()
+{
 	// {{vertex position},{vertex color}} 
-	Vertex Vertices[] =
+	const Vertex VERTICES[8] =
 	{
-		{ { -0.6f, -0.6f, 0.0f, 1.0f },{ 1.0f, 0.2f, 0.2f, 1.0f } },
-		{ { 0.0f,  0.6f, 0.0f, 1.0f },{ 0.2f, 1.0f, 0.2f, 1.0f } },
-		{ { 0.6f, -0.6f, 0.0f, 1.0f },{ 0.2f, 0.2f, 1.0f, 1.0f } }
+		{ { -0.5f, -0.5f,  0.5f, 1 },{ 0.3f, 0.3f, 1, 1 } },
+		{ { -0.5f,  0.5f,  0.5f, 1 },{ 1, 0.3f, 0.3f, 1 } },
+		{ { 0.5f,  0.5f,  0.5f, 1 },{ 0.3f, 1, 0.3f, 1 } },
+		{ { 0.5f, -0.5f,  0.5f, 1 },{ 1, 1, 0.3f, 1 } },
+		{ { -0.5f, -0.5f, -0.5f, 1 },{ 1, 1, 1, 1 } },
+		{ { -0.5f,  0.5f, -0.5f, 1 },{ 1, 0.3f, 0.3f, 1 } },
+		{ { 0.5f,  0.5f, -0.5f, 1 },{ 1, 0.3f, 1, 1 } },
+		{ { 0.5f, -0.5f, -0.5f, 1 },{ 0.3f, 0.3f, 1, 1 } }
 	};
 
-	GLenum ErrorCheckValue = glGetError();
-	const size_t BufferSize = sizeof(Vertices);
-	const size_t VertexSize = sizeof(Vertices[0]);
-	const size_t RgbOffset = sizeof(Vertices[0].XYZW);
+	const GLuint INDICES[36] =
+	{
+		0,2,1,  0,3,2,
+		4,3,0,  4,7,3,
+		4,1,5,  4,0,1,
+		3,6,2,  3,7,6,
+		1,6,5,  1,2,6,
+		7,5,6,  7,4,5
+	};
 
-	glGenVertexArrays(1, &VaoId);
-	glBindVertexArray(VaoId);
+	ShaderIds[0] = glCreateProgram();
+	ExitOnGLError("ERROR: Could not create the shader program");
+	{
+		ShaderIds[1] = LoadShader("SimpleShader.fragment.glsl", GL_FRAGMENT_SHADER);
+		ShaderIds[2] = LoadShader("SimpleShader.vertex.glsl", GL_VERTEX_SHADER);
+		glAttachShader(ShaderIds[0], ShaderIds[1]);
+		glAttachShader(ShaderIds[0], ShaderIds[2]);
+	}
+	glLinkProgram(ShaderIds[0]);
+	ExitOnGLError("ERROR: Could not link the shader program");
 
-	glGenBuffers(1, &VboId);
-	glBindBuffer(GL_ARRAY_BUFFER, VboId);
-	glBufferData(GL_ARRAY_BUFFER, BufferSize, Vertices, GL_STATIC_DRAW);
+	ModelMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "ModelMatrix");
+	ViewMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "ViewMatrix");
+	ProjectionMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "ProjectionMatrix");
+	ExitOnGLError("ERROR: Could not get shader uniform locations");
 
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, VertexSize, 0);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, VertexSize, (GLvoid*)RgbOffset);
+	glGenVertexArrays(1, &BufferIds[0]);
+	ExitOnGLError("ERROR: Could not generate the VAO");
+	glBindVertexArray(BufferIds[0]);
+	ExitOnGLError("ERROR: Could not bind the VAO");
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	ExitOnGLError("ERROR: Could not enable vertex attributes");
 
-	ErrorCheckValue = glGetError();
-	if (ErrorCheckValue != GL_NO_ERROR)
-	{
-		fprintf(
-			stderr,
-			"ERROR: Could not create a VBO: %s \n",
-			gluErrorString(ErrorCheckValue)
-			);
+	glGenBuffers(2, &BufferIds[1]);
+	ExitOnGLError("ERROR: Could not generate the buffer objects");
 
-		exit(-1);
-	}
-}
+	glBindBuffer(GL_ARRAY_BUFFER, BufferIds[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), VERTICES, GL_STATIC_DRAW);
+	ExitOnGLError("ERROR: Could not bind the VBO to the VAO");
 
-void DestroyVBO(void)
-{
-	GLenum ErrorCheckValue = glGetError();
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(VERTICES[0]), (GLvoid*)0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VERTICES[0]), (GLvoid*)sizeof(VERTICES[0].Position));
+	ExitOnGLError("ERROR: Could not set VAO attributes");
 
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDeleteBuffers(1, &VboId);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferIds[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(INDICES), INDICES, GL_STATIC_DRAW);
+	ExitOnGLError("ERROR: Could not bind the IBO to the VAO");
 
 	glBindVertexArray(0);
-	glDeleteVertexArrays(1, &VaoId);
-
-	ErrorCheckValue = glGetError();
-	if (ErrorCheckValue != GL_NO_ERROR)
-	{
-		fprintf(
-			stderr,
-			"ERROR: Could not destroy the VBO: %s \n",
-			gluErrorString(ErrorCheckValue)
-			);
-
-		exit(-1);
-	}
 }
 
-void CreateShaders(void)
+void DestroyCube()
 {
-	GLenum ErrorCheckValue = glGetError();
+	glDetachShader(ShaderIds[0], ShaderIds[1]);
+	glDetachShader(ShaderIds[0], ShaderIds[2]);
+	glDeleteShader(ShaderIds[1]);
+	glDeleteShader(ShaderIds[2]);
+	glDeleteProgram(ShaderIds[0]);
+	ExitOnGLError("ERROR: Could not destroy the shaders");
 
-	VertexShaderId = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(VertexShaderId, 1, &VertexShader, NULL);
-	glCompileShader(VertexShaderId);
-
-	FragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(FragmentShaderId, 1, &FragmentShader, NULL);
-	glCompileShader(FragmentShaderId);
-
-	ProgramId = glCreateProgram();
-	glAttachShader(ProgramId, VertexShaderId);
-	glAttachShader(ProgramId, FragmentShaderId);
-	glLinkProgram(ProgramId);
-	glUseProgram(ProgramId);
-
-	ErrorCheckValue = glGetError();
-	if (ErrorCheckValue != GL_NO_ERROR)
-	{
-		fprintf(
-			stderr,
-			"ERROR: Could not create the shaders: %s \n",
-			gluErrorString(ErrorCheckValue)
-			);
-
-		exit(-1);
-	}
+	glDeleteBuffers(2, &BufferIds[1]);
+	glDeleteVertexArrays(1, &BufferIds[0]);
+	ExitOnGLError("ERROR: Could not destroy the buffer objects");
 }
 
-void DestroyShaders(void)
+void DrawCube(void)
 {
-	GLenum ErrorCheckValue = glGetError();
+	float CubeAngle;
+	clock_t Now = clock();
 
+	if (LastTime == 0)
+		LastTime = Now;
+
+	CubeRotation += 45.0f * ((float)(Now - LastTime) / CLOCKS_PER_SEC);
+	CubeAngle = DegreesToRadians(CubeRotation);
+	LastTime = Now;
+
+	ModelMatrix = IDENTITY_MATRIX;
+	RotateAboutY(&ModelMatrix, CubeAngle);
+	RotateAboutX(&ModelMatrix, CubeAngle);
+
+	glUseProgram(ShaderIds[0]);
+	ExitOnGLError("ERROR: Could not use the shader program");
+
+	glUniformMatrix4fv(ModelMatrixUniformLocation, 1, GL_FALSE, ModelMatrix.m);
+	glUniformMatrix4fv(ViewMatrixUniformLocation, 1, GL_FALSE, ViewMatrix.m);
+	ExitOnGLError("ERROR: Could not set the shader uniforms");
+
+	glBindVertexArray(BufferIds[0]);
+	ExitOnGLError("ERROR: Could not bind the VAO for drawing purposes");
+
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (GLvoid*)0);
+	ExitOnGLError("ERROR: Could not draw the cube");
+
+	glBindVertexArray(0);
 	glUseProgram(0);
-
-	glDetachShader(ProgramId, VertexShaderId);
-	glDetachShader(ProgramId, FragmentShaderId);
-
-	glDeleteShader(FragmentShaderId);
-	glDeleteShader(VertexShaderId);
-
-	glDeleteProgram(ProgramId);
-
-	ErrorCheckValue = glGetError();
-	if (ErrorCheckValue != GL_NO_ERROR)
-	{
-		fprintf(
-			stderr,
-			"ERROR: Could not destroy the shaders: %s \n",
-			gluErrorString(ErrorCheckValue)
-			);
-
-		exit(-1);
-	}
 }
