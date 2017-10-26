@@ -105,11 +105,7 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Resources\Shaders\fragment.hlsl">
-      <Filter>Resource Files\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Resources\Shaders\vertex.hlsl">
-      <Filter>Resource Files\Shaders</Filter>
-    </FxCompile>
+    <None Include="Resources\Shaders\fragment.hlsl" />
+    <None Include="Resources\Shaders\vertex.hlsl" />
   </ItemGroup>
 </Project>

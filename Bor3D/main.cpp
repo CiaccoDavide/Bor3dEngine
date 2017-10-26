@@ -1,9 +1,15 @@
 ﻿#include <iostream>
+// SDL + GLEW
 #include <SDL.h>
 #include <GL/glew.h>
 #include <SDL_opengl.h>
+// SOIL
 #include "SOIL2\SOIL2.h" // for texture loading
-
+// glm
+#include <glm\glm.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+#include <glm\gtc\type_ptr.hpp>
+// other includes
 #include "Shader.h"
 
 const GLint WIDTH = 980, HEIGHT = 640;
@@ -102,20 +108,13 @@ int main(int argc, char *argv[])
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	// load texture
 	unsigned char *image = SOIL_load_image("Resources/Textures/texture_wood_painted.jpg", &width, &height, 0, SOIL_LOAD_RGBA);
-	if (image == nullptr)
-	{
-		std::cout << SOIL_last_result() << std::endl;
-	}
-	else
-	{
-		std::cout << "TEXTURE: " << *image << std::endl;
-	}
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SOIL_free_image_data(image);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	
+
 
 	// game loop
 	while (true)
@@ -132,8 +131,16 @@ int main(int argc, char *argv[])
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
-		// DRAW OPENGL HERE
+		// use your shader
 		shader.Use();
+
+		// transformations
+		glm::mat4 transform;
+		transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+		transform = glm::rotate(transform, (GLfloat)SDL_GetTicks()*-0.001f, glm::vec3(-0.5f, 1.2f, 1.0f));
+
+		GLint transformLocation = glGetUniformLocation(shader.Program, "transform");
+		glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
