@@ -1,6 +1,12 @@
 # Bor3dEngine
 3D OpenGL Game Engine
 
+ - OpenGL 4.4
+ - GLEW
+ - SDL2
+ - SOIL2
+ - glm
+
 Progress:
 
  - first triangle and simple shader
