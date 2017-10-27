@@ -7,11 +7,19 @@ layout(location = 2) in vec2 texCoord;
 out vec3 ourColor;
 out vec2 TexCoord;
 
-uniform mat4 transform;
+// for classic transformations
+//uniform mat4 transform;
+
+// for projection
+uniform mat4 model;			// this matrix converts local objects coords into camera coords
+uniform mat4 projection;	// converts camera coords to normalized coords [0,1]
+uniform mat4 view;			// normalized coords to window coords
 
 void main()
 {
-	gl_Position = transform * vec4(position, 1.0f);
+	// for classic transformations
+	//gl_Position = transform * vec4(position, 1.0f);
+	gl_Position = projection * view * model * vec4(position, 1.0f);
 	ourColor = color;
 	TexCoord = vec2(texCoord.x, 1.0 - texCoord.y);
 }
