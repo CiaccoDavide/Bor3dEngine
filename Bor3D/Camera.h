@@ -144,6 +144,11 @@ public:
 		return this->zoom;
 	}
 
+	glm::vec3 GetPosition()
+	{
+		return this->position;
+	}
+
 	void MoveFaster()
 	{
 		this->movementSpeedMultiplier = 2.6f;

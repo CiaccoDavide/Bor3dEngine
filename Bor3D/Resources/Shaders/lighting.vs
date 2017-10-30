@@ -1,8 +1,11 @@
 #version 440 core
 
 layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
 
-// for projection
+out vec3 Normal;
+out vec3 FragPosition;
+
 uniform mat4 model;			// this matrix converts local objects coords into camera coords
 uniform mat4 view;			// normalized coords to window coords
 uniform mat4 projection;	// converts camera coords to normalized coords [0,1]
@@ -10,4 +13,6 @@ uniform mat4 projection;	// converts camera coords to normalized coords [0,1]
 void main()
 {
 	gl_Position = projection * view * model * vec4(position, 1.0f);
+	FragPosition = vec3(model * vec4(position, 1.0f));
+	Normal = mat3(transpose(inverse(model))) * normal;
 }
