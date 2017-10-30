@@ -32,5 +32,4 @@ Progress:
 
  - Basic lighting with a single light source
 ![Basic lighting with a single light source ](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-30_14-42-41.png?raw=true)
-
 ![Basic lighting with a single light source GIF](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/light_source_000.gif?raw=true)
