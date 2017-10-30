@@ -110,5 +110,17 @@
   <ItemGroup>
     <None Include="Resources\Shaders\fragment.hlsl" />
     <None Include="Resources\Shaders\vertex.hlsl" />
+    <None Include="Resources\Shaders\lighting.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\lighting.vs">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\light_source.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\light_source.vs">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

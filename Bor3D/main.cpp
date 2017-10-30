@@ -28,6 +28,8 @@ GLfloat currentFrame = 0.0f, lastFrame = 0.0f, deltaTime = 0.0f;
 bool running = true;
 void ProcessInput(GLfloat dt);
 
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
 int main(int argc, char *argv[])
 {
 	// init SDL with
@@ -70,6 +72,9 @@ int main(int argc, char *argv[])
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	Shader shader("Resources/Shaders/vertex.hlsl", "Resources/Shaders/fragment.hlsl");
+	Shader lightingShader("Resources/Shaders/lighting.vs", "Resources/Shaders/lighting.frag");
+	Shader lightSourceShader("Resources/Shaders/light_source.vs", "Resources/Shaders/light_source.frag");
+
 	/* QUAD
 	// vertices. [0,0] is the middle
 	GLfloat vertices[] =
@@ -147,11 +152,11 @@ int main(int argc, char *argv[])
 		glm::vec3(-1.3f, 1.0f, -1.5f)
 	};
 
-	GLuint VBO, VAO/*, EBO*/; // vertex buffer object and vertex array object and element buffer object
-	glGenVertexArrays(1, &VAO);
+	GLuint VBO, VAO_box/*, EBO*/; // vertex buffer object and vertex array object and element buffer object
+	glGenVertexArrays(1, &VAO_box);
 	glGenBuffers(1, &VBO);
 
-	glBindVertexArray(VAO);
+	glBindVertexArray(VAO_box);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -163,11 +168,32 @@ int main(int argc, char *argv[])
 	/*glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);*/
 	// texture coords
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
+	/*glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);*/
 
 	//unbind VAO
 	glBindVertexArray(0);
+
+
+	// for the light source
+	GLuint VAO_light; // vertex buffer object and vertex array object and element buffer object
+	glGenVertexArrays(1, &VAO_light);
+	glGenBuffers(1, &VBO);
+
+	glBindVertexArray(VAO_light);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// vertex position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)0);
+	glEnableVertexAttribArray(0);
+
+	//unbind VAO
+	glBindVertexArray(0);
+
+
+
 
 	// texture creation and binding
 	GLuint texture;
@@ -202,15 +228,24 @@ int main(int argc, char *argv[])
 		ProcessInput(deltaTime);
 
 		// use your shader
-		shader.Use();
+		//shader.Use();
+
+		lightingShader.Use();
+		GLint objectColorLocation = glGetUniformLocation(lightingShader.Program, "objectColor");
+		GLint lightingColorLocation = glGetUniformLocation(lightingShader.Program, "lightColor");
+		glUniform3f(objectColorLocation, 0.31f, 0.5f,  1.0f);
+		glUniform3f(lightingColorLocation, 1.0f, 1.0f, 1.0f);
+
 
 		// clear the screen
-		glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
+		//glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
+		glClearColor(0.14f, 0.14f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glUniform1i(glGetUniformLocation(shader.Program, "texture"), 0);
+		// TEXTURE STUFF
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, texture);
+		//glUniform1i(glGetUniformLocation(shader.Program, "texture"), 0);
 
 		// glm::perspective(field of view, ratio, near clipping plane, far clipping plane)
 		projection = glm::perspective(camera.GetZoom(), (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 1000.0f);
@@ -226,20 +261,24 @@ int main(int argc, char *argv[])
 		//model = glm::rotate(model, 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
 		//view = glm::translate(view, glm::vec3(WIDTH / 2, HEIGHT / 2, -700.0f));
 
-		GLint modelLocation = glGetUniformLocation(shader.Program, "model");
+		/*GLint modelLocation = glGetUniformLocation(shader.Program, "model");
 		GLint viewLocation = glGetUniformLocation(shader.Program, "view");
-		GLint projectionLocation = glGetUniformLocation(shader.Program, "projection");
+		GLint projectionLocation = glGetUniformLocation(shader.Program, "projection");*/
+		GLint modelLocation = glGetUniformLocation(lightingShader.Program, "model");
+		GLint viewLocation = glGetUniformLocation(lightingShader.Program, "view");
+		GLint projectionLocation = glGetUniformLocation(lightingShader.Program, "projection");
 		// pass the matrices to the shader
 		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
 
 		// draw our object
-		glBindVertexArray(VAO);
+		glBindVertexArray(VAO_box);
 
 		// bind vertex array
+		glm::mat4 model;
 		for (GLuint i = 0; i < 10; i++)
 		{
-			glm::mat4 model;
+			model = glm::mat4();
 			model = glm::translate(model, cubesPositions[i]);
 			GLfloat angle = 20.0f *(i + 1);
 			model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
@@ -250,12 +289,34 @@ int main(int argc, char *argv[])
 		glBindVertexArray(0);
 
 
+
+
+
+		// light source
+		lightSourceShader.Use();
+
+		modelLocation = glGetUniformLocation(lightSourceShader.Program, "model");
+		viewLocation = glGetUniformLocation(lightSourceShader.Program, "view");
+		projectionLocation = glGetUniformLocation(lightSourceShader.Program, "projection");
+		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+
+		model = glm::mat4();
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+		
+		glBindVertexArray(VAO_light);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+
 		// if double buffering is present this will swap, otherwise not
 		SDL_GL_SwapWindow(window);
 	}
 
 	//delete
-	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &VAO_box);
 	glDeleteBuffers(1, &VBO);
 	//glDeleteBuffers(1, &EBO);
 

@@ -180,6 +180,10 @@
     <None Include="Resources\Shaders\fragment.hlsl">
       <FileType>Document</FileType>
     </None>
+    <None Include="Resources\Shaders\light_source.frag" />
+    <None Include="Resources\Shaders\light_source.vs" />
+    <None Include="Resources\Shaders\lighting.frag" />
+    <None Include="Resources\Shaders\lighting.vs" />
     <None Include="Resources\Shaders\vertex.hlsl">
       <FileType>Document</FileType>
     </None>
