@@ -36,11 +36,11 @@ public:
 		mouseSensitivity(SENSITIVITY),
 		zoom(FOV)
 	{
-	this->position = position;
-	this->worldUp = up;
-	this->yaw = yaw;
-	this->pitch = pitch;
-	this->updateCameraVectors();
+		this->position = position;
+		this->worldUp = up;
+		this->yaw = yaw;
+		this->pitch = pitch;
+		this->updateCameraVectors();
 	}
 
 	// Constructor with scalar values
@@ -70,7 +70,7 @@ public:
 	// Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
 	void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
 	{
-		GLfloat velocity = this->movementSpeed * 0.01f;
+		GLfloat velocity = this->movementSpeed * this->movementSpeedMultiplier * 0.01f;
 
 		if (direction == FORWARD)
 		{
@@ -144,6 +144,19 @@ public:
 		return this->zoom;
 	}
 
+	void MoveFaster()
+	{
+		this->movementSpeedMultiplier = 2.6f;
+	}
+	void MoveNormal()
+	{
+		this->movementSpeedMultiplier = 1.0f;
+	}
+	void MoveSlower()
+	{
+		this->movementSpeedMultiplier = 0.4f;
+	}
+
 private:
 	// Camera Attributes
 	glm::vec3 position;
@@ -158,6 +171,7 @@ private:
 
 	// Camera options
 	GLfloat movementSpeed;
+	GLfloat movementSpeedMultiplier = 1.0f;
 	GLfloat mouseSensitivity;
 	GLfloat zoom;
 

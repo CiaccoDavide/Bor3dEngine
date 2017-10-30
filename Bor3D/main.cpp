@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <string>
+#include <unordered_map>
 // SDL + GLEW
 #include <SDL.h>
 #include <SDL_keyboard.h>
@@ -48,6 +49,8 @@ int main(int argc, char *argv[])
 
 	// create a new context
 	SDL_GLContext context = SDL_GL_CreateContext(window);
+
+
 
 	//it includes SDL_ShowCursor(SDL_DISABLE); and you dont need it anymore, + you need it for relative mouse mode
 	SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -233,7 +236,7 @@ int main(int argc, char *argv[])
 		lightingShader.Use();
 		GLint objectColorLocation = glGetUniformLocation(lightingShader.Program, "objectColor");
 		GLint lightingColorLocation = glGetUniformLocation(lightingShader.Program, "lightColor");
-		glUniform3f(objectColorLocation, 0.31f, 0.5f,  1.0f);
+		glUniform3f(objectColorLocation, 0.31f, 0.5f, 1.0f);
 		glUniform3f(lightingColorLocation, 1.0f, 1.0f, 1.0f);
 
 
@@ -306,7 +309,7 @@ int main(int argc, char *argv[])
 		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
 
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-		
+
 		glBindVertexArray(VAO_light);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
@@ -328,48 +331,126 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 
-void ProcessInput(GLfloat dt)
+/* INPUT MANAGING */
+
+enum InputDevice { KEYBOARD = 0x00000000, MOUSE = 0x22222222 };
+std::unordered_map<uint32_t, uint8_t> keyMapStatus, keyMapPreStatus;
+
+void KeyPress(uint32_t keyID, InputDevice device)
 {
-	SDL_Event event;
-	while (SDL_PollEvent(&event))
+	keyMapStatus[keyID + device] = true;
+}
+
+void KeyRelease(uint32_t keyID, InputDevice device)
+{
+	keyMapStatus[keyID + device] = false;
+}
+
+uint8_t IsKeyDown(uint32_t keyID, InputDevice device)
+{
+	auto it = keyMapStatus.find(keyID + device);
+	if (it != keyMapStatus.end())
 	{
-		if (event.type == SDL_QUIT)
-		{
-			running = false;
-			break;
-		}
-		if (event.type == SDL_KEYDOWN) {
-			if (event.key.keysym.sym == SDLK_ESCAPE)
-			{
-				std::cout << "quit!" << std::endl;
-				running = false;
-				break;
-			}
-			if (event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
-			{
-				camera.ProcessKeyboard(FORWARD, dt);
-			}
-			if (event.key.keysym.sym == SDLK_a || event.key.keysym.sym == SDLK_LEFT)
-			{
-				camera.ProcessKeyboard(LEFT, dt);
-			}
-			if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
-			{
-				camera.ProcessKeyboard(BACKWARD, dt);
-			}
-			if (event.key.keysym.sym == SDLK_d || event.key.keysym.sym == SDLK_RIGHT)
-			{
-				camera.ProcessKeyboard(RIGHT, dt);
-			}
-		}
-		if (event.type == SDL_MOUSEMOTION)
-		{
-			GLfloat xOffset, yOffset;
-			xOffset = event.motion.xrel;
-			yOffset = event.motion.yrel;
-			camera.ProcessMouseMovement(xOffset, -yOffset);
-			std::cout << "mouse:" << xOffset << "," << yOffset << std::endl;
-		}
+		return it->second;
+	}
+	else
+	{
+		return false;
 	}
 }
+
+uint8_t WasKeyDown(uint32_t keyID, InputDevice device) {
+	// We dont want to use the associative array approach here
+	// because we don't want to create a key if it doesnt exist.
+	// So we do it manually
+	auto it = keyMapPreStatus.find(keyID + device);
+	if (it != keyMapPreStatus.end()) {
+		// Found the key
+		return it->second;
+	}
+	else {
+		// Didn't find the key
+		return false;
+	}
+}
+
+uint8_t IsKeyPressed(uint32_t keyID, InputDevice device) {
+	// Check if it is pressed this frame, and wasn't pressed last frame
+	if (IsKeyDown(keyID, device) == true && WasKeyDown(keyID, device) == false) {
+		return true;
+	}
+	return false;
+}
+
+uint8_t IsKeyReleased(uint32_t keyID, InputDevice device) {
+	if (IsKeyDown(keyID, device) == false && WasKeyDown(keyID, device) == true) {
+		return true;
+	}
+	return false;
+}
+
+SDL_Event event;
+GLfloat xOffset, yOffset;
+void ProcessInput(GLfloat dt)
+{
+	//Will keep looping until there are no more events to process
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_KEYDOWN:
+			KeyPress(event.key.keysym.sym, InputDevice::KEYBOARD);
+			break;
+		case SDL_KEYUP:
+			KeyRelease(event.key.keysym.sym, InputDevice::KEYBOARD);
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			KeyPress(event.button.button, InputDevice::MOUSE);
+			break;
+		case SDL_MOUSEBUTTONUP:
+			KeyRelease(event.button.button, InputDevice::MOUSE);
+			break;
+		case SDL_MOUSEMOTION:
+			if (IsKeyDown(SDL_BUTTON_RIGHT, MOUSE))
+				camera.ProcessMouseMovement(event.motion.xrel, -event.motion.yrel);
+			//std::cout << "mouse:" << xOffset << "," << yOffset << std::endl;
+			break;
+		}
+
+	}
+
+	if (IsKeyPressed(SDLK_LSHIFT, InputDevice::KEYBOARD))
+	{
+		camera.MoveFaster();
+	}
+	else if (IsKeyReleased(SDLK_LSHIFT, InputDevice::KEYBOARD)) {
+		camera.MoveNormal();
+	}
+
+	if (IsKeyDown(SDLK_w, InputDevice::KEYBOARD) || IsKeyDown(SDLK_UP, InputDevice::KEYBOARD))
+	{
+		camera.ProcessKeyboard(FORWARD, dt);
+	}
+	if (IsKeyDown(SDLK_a, InputDevice::KEYBOARD) || IsKeyDown(SDLK_LEFT, InputDevice::KEYBOARD))
+	{
+		camera.ProcessKeyboard(LEFT, dt);
+	}
+	if (IsKeyDown(SDLK_s, InputDevice::KEYBOARD) || IsKeyDown(SDLK_DOWN, InputDevice::KEYBOARD))
+	{
+		camera.ProcessKeyboard(BACKWARD, dt);
+	}
+	if (IsKeyDown(SDLK_d, InputDevice::KEYBOARD) || IsKeyDown(SDLK_RIGHT, InputDevice::KEYBOARD))
+	{
+		camera.ProcessKeyboard(RIGHT, dt);
+	}
+	if (IsKeyDown(SDLK_ESCAPE, InputDevice::KEYBOARD))
+	{
+		std::cout << "quit!" << std::endl;
+		running = false;
+	}
+
+	// copy the keyMapStatus inside the keyMapPreStatus for the next loop
+	for (auto& it : keyMapStatus) {
+		keyMapPreStatus[it.first] = it.second;
+	}
+}
+
 
