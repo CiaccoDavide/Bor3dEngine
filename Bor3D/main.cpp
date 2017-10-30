@@ -235,16 +235,27 @@ int main(int argc, char *argv[])
 		//shader.Use();
 
 		lightingShader.Use();
-		GLint objectColorLocation = glGetUniformLocation(lightingShader.Program, "objectColor");
-		GLint lightingColorLocation = glGetUniformLocation(lightingShader.Program, "lightColor");
-		glUniform3f(objectColorLocation, 0.31f, 0.5f, 1.0f);
-		glUniform3f(lightingColorLocation, 1.0f, 1.0f, 1.0f);
-		GLint lightPositionLocation = glGetUniformLocation(lightingShader.Program, "lightPosition");
+		//glUniform3f(objectColorLocation, 0.31f, 0.5f, 1.0f);
+
+		// MATERIAL STUFF
+		GLint lightPositionLocation = glGetUniformLocation(lightingShader.Program, "light.position");
 		GLint viewPositionLocation = glGetUniformLocation(lightingShader.Program, "viewPosition");
 		glUniform3f(lightPositionLocation, lightPos.x, lightPos.y, lightPos.z);
 		glUniform3f(viewPositionLocation, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 
+		glm::vec3 lightColor = glm::vec3(sinf(currentFrame / 1600.0f), sinf(currentFrame / 2000.0f), sinf(currentFrame / 2600.0f));
+		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.5f);
 
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"), ambientColor.r, ambientColor.g, ambientColor.b);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.diffuse"), diffuseColor.r, diffuseColor.g, diffuseColor.b);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.specular"), 1.0f, 1.0f, 1.0f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "material.ambient"), 0.31f, 0.5f, 1.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "material.diffuse"), 0.31f, 0.5f, 1.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "material.specular"), 0.5f, 0.5f, 0.5f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 32.0f);
+		
 		// clear the screen
 		//glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
 		glClearColor(0.14f, 0.14f, 0.2f, 1.0f);
@@ -260,18 +271,9 @@ int main(int argc, char *argv[])
 		//projection = glm::ortho(0.0f, (GLfloat)WIDTH, 0.0f, (GLfloat)HEIGHT, 0.1f, 1000.0f);
 
 		// generate model and view matrices
-		//glm::mat4 model;
 		glm::mat4 view;
-		//model = glm::rotate(model, (GLfloat)SDL_GetTicks()*-0.001f, glm::vec3(0.5f, 1.0f, 0.0f));
-		//view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 		view = camera.GetViewMatrix();
-		// for ortho
-		//model = glm::rotate(model, 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
-		//view = glm::translate(view, glm::vec3(WIDTH / 2, HEIGHT / 2, -700.0f));
 
-		/*GLint modelLocation = glGetUniformLocation(shader.Program, "model");
-		GLint viewLocation = glGetUniformLocation(shader.Program, "view");
-		GLint projectionLocation = glGetUniformLocation(shader.Program, "projection");*/
 		GLint modelLocation = glGetUniformLocation(lightingShader.Program, "model");
 		GLint viewLocation = glGetUniformLocation(lightingShader.Program, "view");
 		GLint projectionLocation = glGetUniformLocation(lightingShader.Program, "projection");
