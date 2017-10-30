@@ -26,3 +26,6 @@ Progress:
 
  - 3d moving camera, multiple cubes
 ![3d moving camera, multiple cubes](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-28_00-11-06.png?raw=true)
+
+ - basic colors lighting and light source
+![basic colors lighting and light source](https://raw.githubusercontent.com/CiaccoDavide/Bor3dEngine/master/screenshots/2017-10-30_10-52-29.png)
