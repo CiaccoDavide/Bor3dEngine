@@ -18,7 +18,7 @@ enum Camera_Movement
 
 const GLfloat YAW = -90.0f;
 const GLfloat PITCH = 0.0f;
-const GLfloat SPEED = 6.0f;
+const GLfloat SPEED = 3.0f;
 const GLfloat SENSITIVITY = 0.25f;
 const GLfloat FOV = 45.0f;
 
@@ -151,7 +151,7 @@ public:
 
 	void MoveFaster()
 	{
-		this->movementSpeedMultiplier = 2.6f;
+		this->movementSpeedMultiplier = 3.6f;
 	}
 	void MoveNormal()
 	{
@@ -159,7 +159,7 @@ public:
 	}
 	void MoveSlower()
 	{
-		this->movementSpeedMultiplier = 0.4f;
+		this->movementSpeedMultiplier = 0.1f;
 	}
 
 private:
