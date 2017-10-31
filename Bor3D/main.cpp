@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 	glm::vec3 cubesPositions[] =
 	{
 		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(1000.0f, 1000.0f, 1000.0f),
+		/*glm::vec3(1000.0f, 1000.0f, 1000.0f),
 		glm::vec3(1.1f, 0.0f, 0.0f),
 		glm::vec3(-1.1f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 1.1f),
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 		glm::vec3(1.1f, 0.0f, -1.1f),
 		glm::vec3(-1.1f, 0.0f, 1.1f),
 		glm::vec3(-1.1f, 0.0f, -1.1f),
-		/*
+		*/
 		glm::vec3(2.0f, 5.0f, -15.0f),
 		glm::vec3(-1.5f, -2.2f, -2.5f),
 		glm::vec3(-3.8f, -2.0f, -12.3f),
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 		glm::vec3(1.3f, -2.0f, -2.5f),
 		glm::vec3(1.5f, 2.0f, -2.5f),
 		glm::vec3(1.5f, 0.2f, -1.5f),
-		glm::vec3(-1.3f, 1.0f, -1.5f)*/
+		glm::vec3(-1.3f, 1.0f, -1.5f)
 	};
 
 	GLuint VBO, VAO_box/*, EBO*/; // vertex buffer object and vertex array object and element buffer object
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
 
 		// move the light source
 		lightPosition = glm::vec3(4 * sinf(currentFrame / 1600.0f), 2 * sinf(currentFrame / 2000.0f), 3 * sinf(currentFrame / 2600.0f));
-		lightPosition = glm::vec3( cosf(currentFrame / 1000.0f),1.1f,  sinf(currentFrame / 1000.0f));
+		lightPosition = glm::vec3(cosf(currentFrame / 1000.0f), 1.1f, sinf(currentFrame / 1000.0f));
 
 		// use your shader
 		//shader.Use();
@@ -261,9 +261,11 @@ int main(int argc, char *argv[])
 		//glUniform3f(objectColorLocation, 0.31f, 0.5f, 1.0f);
 
 		// MATERIAL STUFF
-		GLint lightPositionLocation = glGetUniformLocation(lightingShader.Program, "light.position");
+		//GLint lightPositionLocation = glGetUniformLocation(lightingShader.Program, "light.position");
+		GLint lightDirectionLocation = glGetUniformLocation(lightingShader.Program, "light.direction");
 		GLint viewPositionLocation = glGetUniformLocation(lightingShader.Program, "viewPosition");
-		glUniform3f(lightPositionLocation, lightPosition.x, lightPosition.y, lightPosition.z);
+		//glUniform3f(lightPositionLocation, lightPosition.x, lightPosition.y, lightPosition.z);
+		glUniform3f(lightDirectionLocation, -0.2f, 1.0f, -0.3f);
 		glUniform3f(viewPositionLocation, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 
 
@@ -314,7 +316,7 @@ int main(int argc, char *argv[])
 			model = glm::mat4();
 			model = glm::translate(model, cubesPositions[i]);
 			GLfloat angle = 20.0f *(i + 1);
-			//model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
+			model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
 			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
