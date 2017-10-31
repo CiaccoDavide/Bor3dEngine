@@ -9,6 +9,9 @@
 
 Progress:
 
+ - Point light
+![Point light](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_16-32-39_point_light.gif?raw=true)
+
  - Directional light
 ![Directional light](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_14-44-59.png?raw=true)
 
