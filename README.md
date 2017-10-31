@@ -9,6 +9,10 @@
 
 Progress:
 
+ - Specular texture shader
+![Specular texture shader gif](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_12-55-50_specular.gif?raw=true)
+![Specular texture shader](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_12-55-50.png?raw=true)
+
  - Materials
 ![Materials](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-30_19-14-08.png?raw=true)
 ![Materials](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-30_18-57-38.png?raw=true)
