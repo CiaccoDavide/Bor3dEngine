@@ -9,6 +9,9 @@
 
 Progress:
 
+ - Directional light
+![Directional light](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_14-44-59.png?raw=true)
+
  - Specular texture shader
 ![Specular texture shader gif](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_12-55-50_specular.gif?raw=true)
 ![Specular texture shader](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_12-55-50.png?raw=true)
