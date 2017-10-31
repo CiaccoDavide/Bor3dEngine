@@ -142,20 +142,20 @@ int main(int argc, char *argv[])
 		-0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f,     0.0f,  0.0f,
 		-0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,     0.0f,  1.0f
 	};
-
+	float dstnc = 1.6f;
 	glm::vec3 cubesPositions[] =
 	{
 		glm::vec3(0.0f, 0.0f, 0.0f),
-		/*glm::vec3(1000.0f, 1000.0f, 1000.0f),
-		glm::vec3(1.1f, 0.0f, 0.0f),
-		glm::vec3(-1.1f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 1.1f),
-		glm::vec3(0.0f, 0.0f, -1.1f),
-		glm::vec3(1.1f, 0.0f, 1.1f),
-		glm::vec3(1.1f, 0.0f, -1.1f),
-		glm::vec3(-1.1f, 0.0f, 1.1f),
-		glm::vec3(-1.1f, 0.0f, -1.1f),
-		*/
+		glm::vec3(0.0f, dstnc, 0.0f),
+		glm::vec3(dstnc, 0.0f, 0.0f),
+		glm::vec3(-dstnc, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, dstnc),
+		glm::vec3(0.0f, 0.0f, -dstnc),
+		glm::vec3(dstnc, 0.0f, dstnc),
+		glm::vec3(dstnc, 0.0f, -dstnc),
+		glm::vec3(-dstnc, 0.0f, dstnc),
+		glm::vec3(-dstnc, 0.0f, -dstnc),
+		/*
 		glm::vec3(2.0f, 5.0f, -15.0f),
 		glm::vec3(-1.5f, -2.2f, -2.5f),
 		glm::vec3(-3.8f, -2.0f, -12.3f),
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 		glm::vec3(1.3f, -2.0f, -2.5f),
 		glm::vec3(1.5f, 2.0f, -2.5f),
 		glm::vec3(1.5f, 0.2f, -1.5f),
-		glm::vec3(-1.3f, 1.0f, -1.5f)
+		glm::vec3(-1.3f, 1.0f, -1.5f)*/
 	};
 
 	GLuint VBO, VAO_box/*, EBO*/; // vertex buffer object and vertex array object and element buffer object
@@ -205,9 +205,10 @@ int main(int argc, char *argv[])
 	//unbind VAO
 	glBindVertexArray(0);
 
-	GLuint diffuseMap, specularMap;
+	GLuint diffuseMap, specularMap, emissionMap;
 	glGenTextures(1, &diffuseMap);
 	glGenTextures(1, &specularMap);
+	glGenTextures(1, &emissionMap);
 	int textureWidth, textureHeight;
 	unsigned char *image;
 	// diffuse map
@@ -255,18 +256,16 @@ int main(int argc, char *argv[])
 		lightPosition = glm::vec3(cosf(currentFrame / 1000.0f), 1.1f, sinf(currentFrame / 1000.0f));
 
 		// use your shader
-		//shader.Use();
-
 		lightingShader.Use();
-		//glUniform3f(objectColorLocation, 0.31f, 0.5f, 1.0f);
-
+		 
 		// MATERIAL STUFF
-		//GLint lightPositionLocation = glGetUniformLocation(lightingShader.Program, "light.position");
-		GLint lightDirectionLocation = glGetUniformLocation(lightingShader.Program, "light.direction");
+		GLint lightPositionLocation = glGetUniformLocation(lightingShader.Program, "light.position");
 		GLint viewPositionLocation = glGetUniformLocation(lightingShader.Program, "viewPosition");
-		//glUniform3f(lightPositionLocation, lightPosition.x, lightPosition.y, lightPosition.z);
-		glUniform3f(lightDirectionLocation, -0.2f, 1.0f, -0.3f);
+		glUniform3f(lightPositionLocation, lightPosition.x, lightPosition.y, lightPosition.z);
 		glUniform3f(viewPositionLocation, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
+		// directional lighting
+		//GLint lightDirectionLocation = glGetUniformLocation(lightingShader.Program, "light.direction");
+		//glUniform3f(lightDirectionLocation, -0.2f, 1.0f, -0.3f);
 
 
 		//glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"), sinf(currentFrame / 1600.0f), sinf(currentFrame / 2000.0f), sinf(currentFrame / 2600.0f));
@@ -275,6 +274,9 @@ int main(int argc, char *argv[])
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"), 0.2f, 0.2f, 0.2f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.diffuse"), 0.5f, 0.5f, 0.5f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.specular"), 1.0f, 1.0f, 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "light.constant"), 0.4f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "light.linear"), 0.03f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "light.quadratic"), 0.032f);
 
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 132.0f);
 
