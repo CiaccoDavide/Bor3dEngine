@@ -9,6 +9,13 @@
 
 Progress:
 
+ - Multiple coloured point lights
+![Multiple coloured point lights](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-11-01_23-00-09.png?raw=true)
+![Multiple coloured point lights](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-11-01_23-00-22.png?raw=true)
+
+ - Spot light
+![Spot light](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-11-01_23-09-56.png?raw=true)
+
  - Point light
 ![Point light](https://github.com/CiaccoDavide/Bor3dEngine/blob/master/screenshots/2017-10-31_16-32-39_point_light.gif?raw=true)
 
