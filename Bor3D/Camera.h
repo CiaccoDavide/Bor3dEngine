@@ -18,7 +18,7 @@ enum Camera_Movement
 
 const GLfloat YAW = -90.0f;
 const GLfloat PITCH = 0.0f;
-const GLfloat SPEED = 3.0f;
+const GLfloat SPEED = 0.8f;
 const GLfloat SENSITIVITY = 0.25f;
 const GLfloat FOV = 45.0f;
 
@@ -70,7 +70,7 @@ public:
 	// Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
 	void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
 	{
-		GLfloat velocity = this->movementSpeed * this->movementSpeedMultiplier * 0.01f;
+		GLfloat velocity = this->movementSpeed * this->movementSpeedMultiplier * 0.01f * deltaTime;
 
 		if (direction == FORWARD)
 		{
@@ -149,6 +149,11 @@ public:
 		return this->position;
 	}
 
+	glm::vec3 GetFront()
+	{
+		return this->front;
+	}
+
 	void MoveFaster()
 	{
 		this->movementSpeedMultiplier = 3.6f;
@@ -159,7 +164,7 @@ public:
 	}
 	void MoveSlower()
 	{
-		this->movementSpeedMultiplier = 0.1f;
+		this->movementSpeedMultiplier = 0.2f;
 	}
 
 private:

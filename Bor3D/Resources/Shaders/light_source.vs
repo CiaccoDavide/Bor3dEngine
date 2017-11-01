@@ -6,8 +6,12 @@ layout(location = 0) in vec3 position;
 uniform mat4 model;			// this matrix converts local objects coords into camera coords
 uniform mat4 view;			// normalized coords to window coords
 uniform mat4 projection;	// converts camera coords to normalized coords [0,1]
+uniform vec3 color;
+
+out vec3 Color;
 
 void main()
 {
 	gl_Position = projection * view * model * vec4(position, 1.0f);
+	Color = color;
 }

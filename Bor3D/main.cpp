@@ -17,7 +17,8 @@
 #include "Shader.h"
 #include "Camera.h"
 
-const GLint WIDTH = 980, HEIGHT = 640;
+//const GLint WIDTH = 980, HEIGHT = 640;
+const GLint WIDTH = 1600, HEIGHT = 900;
 const GLchar *vertexShaderSource;
 const GLchar *fragmentShaderSource;
 
@@ -26,7 +27,7 @@ GLfloat lastX = WIDTH / 2.0f;
 GLfloat lastY = HEIGHT / 2.0f;
 GLfloat currentFrame = 0.0f, lastFrame = 0.0f, deltaTime = 0.0f;
 
-bool running = true;
+bool running = true, is_active_spotlight = true;
 void ProcessInput(GLfloat dt);
 
 glm::vec3 lightPosition(1.2f, 1.0f, 2.0f);
@@ -55,6 +56,10 @@ int main(int argc, char *argv[])
 	//it includes SDL_ShowCursor(SDL_DISABLE); and you dont need it anymore, + you need it for relative mouse mode
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
+	/*Uint32 flags(SDL_GetWindowFlags(window));
+	flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	SDL_SetWindowFullscreen(window, flags);*/
+
 	// enable experimental features
 	glewExperimental = GL_TRUE;
 
@@ -77,18 +82,18 @@ int main(int argc, char *argv[])
 	Shader shader("Resources/Shaders/vertex.hlsl", "Resources/Shaders/fragment.hlsl");
 	Shader lightingShader("Resources/Shaders/lighting.vs", "Resources/Shaders/lighting.frag");
 	Shader lightSourceShader("Resources/Shaders/light_source.vs", "Resources/Shaders/light_source.frag");
-
-	/* QUAD
+	/*
+	// QUAD
 	// vertices. [0,0] is the middle
-	GLfloat vertices[] =
+	GLfloat quadVertices[] =
 	{ // position[x,y,z],		color[r,g,b],			texture coords
-		0.5f, 0.5f, 0.0f,		0.0f, 0.0f, 0.8f,		1.0f, 1.0f, // top right
-		0.5f, -0.5f, 0.0f,		0.8f, 0.0f, 0.0f,		1.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,		0.0f, 0.8f, 0.0f,		0.0f, 0.0f, // bottom left
-		-0.5f, 0.5f, 0.0f,		0.0f, 0.0f, 0.8f,		0.0f, 1.0f  // top left
+		5.0f, 5.5f, 0.0f,		0.0f, 0.0f, 0.8f,		1.0f, 1.0f, // top right
+		0.5f, -5.5f, 0.0f,		0.8f, 0.0f, 0.0f,		1.0f, 0.0f, // bottom right
+		-5.5f, -5.5f, 0.0f,		0.0f, 0.8f, 0.0f,		0.0f, 0.0f, // bottom left
+		-5.5f, 5.5f, 0.0f,		0.0f, 0.0f, 0.8f,		0.0f, 1.0f  // top left
 	};
 	// to draw a quad we got to draw two triangles
-	GLuint indices[] =
+	GLuint quadIndices[] =
 	{
 		0, 1, 3, // first triangle
 		1, 2, 3  // first triangle
@@ -145,6 +150,7 @@ int main(int argc, char *argv[])
 	float dstnc = 1.6f;
 	glm::vec3 cubesPositions[] =
 	{
+		glm::vec3(0.0f, -1.8f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, dstnc, 0.0f),
 		glm::vec3(dstnc, 0.0f, 0.0f),
@@ -165,6 +171,14 @@ int main(int argc, char *argv[])
 		glm::vec3(1.5f, 2.0f, -2.5f),
 		glm::vec3(1.5f, 0.2f, -1.5f),
 		glm::vec3(-1.3f, 1.0f, -1.5f)*/
+	};
+
+	glm::vec3 pointLightPositions[100];
+	glm::vec3 pointLightColors[] =
+	{
+		glm::vec3(1.0f,0.2f,0.2f),
+		glm::vec3(0.2f,1.0f,0.2f),
+		glm::vec3(0.2f,0.2f,1.0f)
 	};
 
 	GLuint VBO, VAO_box/*, EBO*/; // vertex buffer object and vertex array object and element buffer object
@@ -252,33 +266,66 @@ int main(int argc, char *argv[])
 		ProcessInput(deltaTime);
 
 		// move the light source
-		lightPosition = glm::vec3(4 * sinf(currentFrame / 1600.0f), 2 * sinf(currentFrame / 2000.0f), 3 * sinf(currentFrame / 2600.0f));
-		lightPosition = glm::vec3(cosf(currentFrame / 1000.0f), 1.1f, sinf(currentFrame / 1000.0f));
+		//lightPosition = glm::vec3(4 * sinf(currentFrame / 1600.0f), 2 * sinf(currentFrame / 2000.0f), 3 * sinf(currentFrame / 2600.0f));
+		//lightPosition = glm::vec3(cosf(currentFrame / 1000.0f), 1.1f, sinf(currentFrame / 1000.0f));
+		lightPosition = glm::vec3(0.0f);
 
 		// use your shader
 		lightingShader.Use();
-		 
+
 		// MATERIAL STUFF
 		GLint lightPositionLocation = glGetUniformLocation(lightingShader.Program, "light.position");
 		GLint viewPositionLocation = glGetUniformLocation(lightingShader.Program, "viewPosition");
 		glUniform3f(lightPositionLocation, lightPosition.x, lightPosition.y, lightPosition.z);
 		glUniform3f(viewPositionLocation, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-		// directional lighting
-		//GLint lightDirectionLocation = glGetUniformLocation(lightingShader.Program, "light.direction");
-		//glUniform3f(lightDirectionLocation, -0.2f, 1.0f, -0.3f);
+
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 32.0f);
+
+		// Directional light
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "directionalLight.direction"), -0.2f, -1.0f, -0.3f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "directionalLight.ambient"), 0.0f, 0.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "directionalLight.diffuse"), 0.0f, 0.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "directionalLight.specular"), 0.01f, 0.01f, 0.01f);
+
+		// Point lights
+		std::string shaderPropString;
+		for (GLuint i = 0; i < 10; i++)
+		{
+			shaderPropString = ("pointLights[" + std::to_string(i) + "].position");
+			glUniform3f(glGetUniformLocation(lightingShader.Program, shaderPropString.c_str()), pointLightPositions[i].x, pointLightPositions[i].y, pointLightPositions[i].z);
+			shaderPropString = ("pointLights[" + std::to_string(i) + "].ambient");
+			glUniform3f(glGetUniformLocation(lightingShader.Program, shaderPropString.c_str()), 0.05f, 0.05f, 0.05f);
+			shaderPropString = ("pointLights[" + std::to_string(i) + "].diffuse");
+			glUniform3f(glGetUniformLocation(lightingShader.Program, shaderPropString.c_str()), pointLightColors[i % 3].r, pointLightColors[i % 3].g, pointLightColors[i % 3].b);
+			shaderPropString = ("pointLights[" + std::to_string(i) + "].specular");
+			glUniform3f(glGetUniformLocation(lightingShader.Program, shaderPropString.c_str()), 2.6f*pointLightColors[i % 3].r, 2.6f*pointLightColors[i % 3].g, 2.6f*pointLightColors[i % 3].b);
+			shaderPropString = ("pointLights[" + std::to_string(i) + "].constant");
+			glUniform1f(glGetUniformLocation(lightingShader.Program, shaderPropString.c_str()), 1.0f);
+			shaderPropString = ("pointLights[" + std::to_string(i) + "].linear");
+			glUniform1f(glGetUniformLocation(lightingShader.Program, shaderPropString.c_str()), 0.09f);
+			shaderPropString = ("pointLights[" + std::to_string(i) + "].quadratic");
+			glUniform1f(glGetUniformLocation(lightingShader.Program, shaderPropString.c_str()), 0.032f);
+		}
+		if (is_active_spotlight) {
+			// SpotLight
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), camera.GetFront().x, camera.GetFront().y, camera.GetFront().z);
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.0f, 0.0f, 0.0f);
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 1.0f, 1.0f, 1.0f);
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.specular"), 1.0f, 1.0f, 1.0f);
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.constant"), 1.0f);
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.linear"), 0.09f);
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.quadratic"), 0.032f);
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutoff"), glm::cos(glm::radians(12.5f)));
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutoff"), glm::cos(glm::radians(15.0f)));
+		}
 
 
-		//glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"), sinf(currentFrame / 1600.0f), sinf(currentFrame / 2000.0f), sinf(currentFrame / 2600.0f));
-		//glUniform3f(glGetUniformLocation(lightingShader.Program, "light.diffuse"), sinf(currentFrame / 1600.0f), sinf(currentFrame / 2000.0f), sinf(currentFrame / 2600.0f));
-		//glUniform3f(glGetUniformLocation(lightingShader.Program, "light.specular"), sinf(currentFrame / 1600.0f), sinf(currentFrame / 2000.0f), sinf(currentFrame / 2600.0f));
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"), 0.2f, 0.2f, 0.2f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.diffuse"), 0.5f, 0.5f, 0.5f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "light.specular"), 1.0f, 1.0f, 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "light.constant"), 0.4f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "light.linear"), 0.03f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "light.quadratic"), 0.032f);
 
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 132.0f);
+
+
+
+
 
 		// generate model and view matrices
 		glm::mat4 view;
@@ -313,7 +360,14 @@ int main(int argc, char *argv[])
 
 		// bind vertex array
 		glm::mat4 model;
-		for (GLuint i = 0; i < 10; i++)
+
+		model = glm::mat4();
+		model = glm::translate(model, cubesPositions[0]);
+		model = glm::scale(model, glm::vec3(15.0f, 0.2f, 15.0f));
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		for (GLuint i = 1; i < 11; i++)
 		{
 			model = glm::mat4();
 			model = glm::translate(model, cubesPositions[i]);
@@ -335,6 +389,7 @@ int main(int argc, char *argv[])
 		modelLocation = glGetUniformLocation(lightSourceShader.Program, "model");
 		viewLocation = glGetUniformLocation(lightSourceShader.Program, "view");
 		projectionLocation = glGetUniformLocation(lightSourceShader.Program, "projection");
+
 		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -346,6 +401,20 @@ int main(int argc, char *argv[])
 
 		glBindVertexArray(VAO_light);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+
+		glBindVertexArray(VAO_light);
+		for (GLuint i = 0; i < 10; i++)
+		{
+			glUniform3f(glGetUniformLocation(lightSourceShader.Program, "color"), pointLightColors[i % 3].r, pointLightColors[i % 3].g, pointLightColors[i % 3].b);
+
+			pointLightPositions[i] = glm::vec3(6 * cosf((1 + i) * currentFrame / 6000.0f), 0.5f, 6 * sinf((1 + i) * currentFrame / 6000.0f));
+			model = glm::mat4();
+			model = glm::translate(model, pointLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.1f));
+			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 		glBindVertexArray(0);
 
 		// if double buffering is present this will swap, otherwise not
@@ -455,15 +524,23 @@ void ProcessInput(GLfloat dt)
 	{
 		camera.MoveFaster();
 	}
-	else if (IsKeyReleased(SDLK_LSHIFT, InputDevice::KEYBOARD)) {
+	else if (IsKeyReleased(SDLK_LSHIFT, InputDevice::KEYBOARD))
+	{
 		camera.MoveNormal();
 	}
+
 	if (IsKeyPressed(SDLK_LCTRL, InputDevice::KEYBOARD))
 	{
 		camera.MoveSlower();
 	}
-	else if (IsKeyReleased(SDLK_LCTRL, InputDevice::KEYBOARD)) {
+	else if (IsKeyReleased(SDLK_LCTRL, InputDevice::KEYBOARD))
+	{
 		camera.MoveNormal();
+	}
+
+	if (IsKeyPressed(SDLK_f, InputDevice::KEYBOARD))
+	{
+		is_active_spotlight = !is_active_spotlight;
 	}
 
 	if (IsKeyDown(SDLK_w, InputDevice::KEYBOARD) || IsKeyDown(SDLK_UP, InputDevice::KEYBOARD))
