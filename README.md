@@ -6,6 +6,7 @@
  - SDL2
  - SOIL2
  - glm
+ - assimp 4.0.1
 
 Progress:
 
