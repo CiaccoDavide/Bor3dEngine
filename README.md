@@ -8,6 +8,8 @@
  - glm
  - assimp 4.0.1
 
+Models inside ./Bor3D/Resources/Models downloaded from Morgan McGuire's [Computer Graphics Archive](https://casual-effects.com/data)
+
 Progress:
 
  - Multiple coloured point lights
